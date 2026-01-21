@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minute Might Balancer - SCRUD Combat Simulator</title>
+    <style>
+        /* Fonts: Uses system fonts for offline capability, with web fonts as enhancement if available */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap');
+
+        :root {
+            --font-display: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+            --font-mono: 'Source Code Pro', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+            --bg-primary: #0d0d0f;
+            --bg-secondary: #161619;
+            --bg-tertiary: #1e1e22;
+            --bg-card: #222228;
+            --border-color: #3a3a42;
+            --border-accent: #4a4a55;
+            --text-primary: #e8e6e3;
+            --text-secondary: #a09a90;
+            --text-muted: #6a6560;
+            --accent-attacker: #c45c3e;
+            --accent-attacker-light: #e07050;
+            --accent-defender: #3e7cc4;
+            --accent-defender-light: #5090e0;
+            --accent-draw: #7a7a70;
+            --accent-gold: #c9a227;
+            --accent-success: #4a9c5a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 2px solid var(--accent-gold);
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .combat-setup {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .unit-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .unit-panel.attacker {
+            border-top: 3px solid var(--accent-attacker);
+        }
+
+        .unit-panel.defender {
+            border-top: 3px solid var(--accent-defender);
+        }
+
+        .unit-panel h2 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .unit-panel.attacker h2 { color: var(--accent-attacker-light); }
+        .unit-panel.defender h2 { color: var(--accent-defender-light); }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.6rem 0.8rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .bonus-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .bonus-section h3 {
+            font-size: 0.8rem;
+            color: var(--accent-gold);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-gold);
+        }
+
+        .checkbox-group label {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .combat-mode {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .combat-mode h3 {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .mode-toggle {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mode-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-toggle input[type="radio"] {
+            accent-color: var(--accent-gold);
+        }
+
+        .mode-toggle label:has(input:checked) {
+            border-color: var(--accent-gold);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .run-button {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #a88520 100%);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 6px;
+            padding: 1rem 2rem;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3);
+        }
+
+        .run-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(201, 162, 39, 0.4);
+        }
+
+        .run-button:active {
+            transform: translateY(0);
+        }
+
+        .sim-count {
+            text-align: center;
+        }
+
+        .sim-count label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+
+        .sim-count input {
+            width: 100px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.4rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            text-align: center;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .results-header {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--accent-gold);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .result-card h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .victory-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1.5rem;
+            height: 180px;
+            padding: 1rem 0;
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bar-wrapper {
+            height: 140px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .bar {
+            width: 60px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .bar.attacker { background: linear-gradient(180deg, var(--accent-attacker-light) 0%, var(--accent-attacker) 100%); }
+        .bar.defender { background: linear-gradient(180deg, var(--accent-defender-light) 0%, var(--accent-defender) 100%); }
+        .bar.draw { background: linear-gradient(180deg, #8a8a80 0%, var(--accent-draw) 100%); }
+
+        .bar-value {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .bar-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .histogram-container {
+            position: relative;
+        }
+
+        .histogram-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .histogram-explanation {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .histogram-chart {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .histogram-y-label {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: rotate(-90deg) translateX(-50%);
+            transform-origin: left center;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .histogram {
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 2px;
+            padding: 0.5rem 0;
+            position: relative;
+        }
+
+        .histogram-bar {
+            min-width: 18px;
+            flex: 1;
+            max-width: 30px;
+            min-height: 2px;
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s ease;
+            position: relative;
+        }
+
+        .histogram-bar.attacker { background: var(--accent-attacker); }
+        .histogram-bar.defender { background: var(--accent-defender); }
+        
+        .histogram-bar.mean-marker {
+            box-shadow: 0 0 0 2px var(--accent-gold);
+        }
+
+        .histogram-bar-label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
+        .histogram-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 1.25rem;
+            padding-left: 30px;
+        }
+
+        .histogram-x-label {
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+            padding-left: 30px;
+        }
+
+        .sigma-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .sigma-stat {
+            text-align: center;
+        }
+
+        .sigma-stat-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.2rem;
+        }
+
+        .sigma-stat-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .sigma-stat-value.attacker { color: var(--accent-attacker-light); }
+        .sigma-stat-value.defender { color: var(--accent-defender-light); }
+
+        .sigma-range {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            text-align: center;
+        }
+
+        .sigma-range span {
+            background: var(--bg-primary);
+            padding: 0.4rem;
+            border-radius: 3px;
+        }
+
+        .sigma-range strong {
+            color: var(--text-primary);
+            display: block;
+            margin-top: 0.2rem;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stats-table th {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        .stats-table td {
+            font-size: 0.85rem;
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .stat-attacker { color: var(--accent-attacker-light); }
+        .stat-defender { color: var(--accent-defender-light); }
+        .stat-highlight { color: var(--accent-gold); font-weight: 600; }
+
+        .dice-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .dice-side {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        .dice-side h4 {
+            font-size: 0.8rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .dice-side.attacker h4 { color: var(--accent-attacker-light); }
+        .dice-side.defender h4 { color: var(--accent-defender-light); }
+
+        .dice-stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            padding: 0.3rem 0;
+        }
+
+        .dice-stat-row span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .dice-stat-row[title] {
+            cursor: help;
+        }
+
+        .help-text {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+
+        .combat-field {
+            transition: opacity 0.2s ease;
+        }
+
+        .missile-options {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .missile-options .checkbox-group {
+            margin-bottom: 0.5rem;
+        }
+
+        .missile-options .checkbox-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        /* Validation styling */
+        .form-group input.invalid {
+            border-color: var(--accent-attacker);
+            background: rgba(196, 92, 62, 0.1);
+        }
+
+        .form-group input.valid {
+            border-color: var(--accent-success);
+        }
+
+        .validation-message {
+            font-size: 0.7rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .validation-message.error {
+            color: var(--accent-attacker);
+            display: block;
+        }
+
+        .validation-message.success {
+            color: var(--accent-success);
+            display: block;
+        }
+
+        /* Loading spinner overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 13, 15, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .loading-overlay.visible {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .loading-subtext {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Bonus selection */
+        .bonus-select {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .bonus-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .bonus-option:has(input:checked) {
+            border-color: var(--accent-gold);
+            background: rgba(201, 162, 39, 0.15);
+        }
+
+        .bonus-option input {
+            display: none;
+        }
+
+        .bonus-option span {
+            color: var(--text-secondary);
+        }
+
+        .bonus-option:has(input:checked) span {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        /* History section */
+        .history-section {
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--accent-gold);
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+        }
+
+        .history-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .history-clear {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-clear:hover {
+            border-color: var(--accent-attacker);
+            color: var(--accent-attacker);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 180px;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            align-items: center;
+        }
+
+        .history-type {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+        }
+
+        .history-type.melee { color: var(--accent-gold); }
+        .history-type.missile { color: var(--accent-defender-light); }
+
+        .history-rolls {
+            color: var(--text-secondary);
+        }
+
+        .history-rolls .vs {
+            color: var(--text-muted);
+            margin: 0 0.5rem;
+        }
+
+        .history-results {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .history-results .win-pct {
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+        }
+
+        .history-results .attacker-pct {
+            background: rgba(196, 92, 62, 0.2);
+            color: var(--accent-attacker-light);
+        }
+
+        .history-results .draw-pct {
+            background: rgba(122, 122, 112, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .history-results .defender-pct {
+            background: rgba(62, 124, 196, 0.2);
+            color: var(--accent-defender-light);
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        .history-item.new {
+            animation: historyFlash 1s ease;
+        }
+
+        @keyframes historyFlash {
+            0% { background: rgba(201, 162, 39, 0.3); }
+            100% { background: var(--bg-card); }
+        }
+
+        .history-count {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+
+        @media (max-width: 900px) {
+            .combat-setup {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Simulating Combat</div>
+        <div class="loading-subtext" id="loading-progress">Running simulations...</div>
+    </div>
+
+    <header>
+        <h1>⚔ Minute Might Balancer</h1>
+        <p>SCRUD Combat Probability Simulator</p>
+    </header>
+
+    <main>
+        <div class="combat-setup">
+            <!-- Attacker Panel -->
+            <div class="unit-panel attacker">
+                <h2>⚔ Attacker</h2>
+                
+                <div class="form-group">
+                    <label>Unit Name</label>
+                    <input type="text" id="attacker-name" placeholder="e.g., Heavy Infantry">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Figures</label>
+                        <input type="number" id="attacker-figures" value="4" min="1">
+                    </div>
+                </div>
+                
+                <!-- Melee Attack Field -->
+                <div class="form-group combat-field melee-field">
+                    <label>Melee Attack</label>
+                    <input type="text" id="attacker-melee" placeholder="e.g., 2d6/1f + 1d8" onblur="validateDiceInput(this)">
+                    <p class="help-text">Format: [dice]d[faces]/[figures]f + [flat dice]</p>
+                    <p class="validation-message" id="attacker-melee-validation"></p>
+                </div>
+                
+                <!-- Missile Fire Attack Field -->
+                <div class="form-group combat-field missile-field" style="display: none;">
+                    <label>Missile Fire Attack</label>
+                    <input type="text" id="attacker-missile" placeholder="e.g., 1d8/1f" onblur="validateDiceInput(this); checkIndirectFireEligibility()">
+                    <p class="help-text">Dice that roll 5+ are hits</p>
+                    <p class="validation-message" id="attacker-missile-validation"></p>
+                </div>
+                
+                <!-- Missile Fire Options (only for missile) -->
+                <div class="missile-options combat-field missile-field" style="display: none;">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="attacker-artillery">
+                        <label for="attacker-artillery">Artillery (2 casualties per hit)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="attacker-indirect">
+                        <label for="attacker-indirect">Indirect Fire (d8→d6)</label>
+                    </div>
+                    <p class="help-text" id="indirect-warning" style="display: none; color: var(--accent-attacker);">
+                        ⚠ No d8 dice in pool - indirect fire has no effect
+                    </p>
+                </div>
+                
+                <div class="bonus-section">
+                    <h3>Bonus Dice</h3>
+                    <div class="bonus-select">
+                        <label class="bonus-option">
+                            <input type="radio" name="attacker-bonus" value="none" checked>
+                            <span>None</span>
+                        </label>
+                        <label class="bonus-option">
+                            <input type="radio" name="attacker-bonus" value="standard">
+                            <span>50% Bonus</span>
+                        </label>
+                        <label class="bonus-option">
+                            <input type="radio" name="attacker-bonus" value="double">
+                            <span>100% Bonus</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="combat-mode">
+                    <h3>Combat Mode</h3>
+                    <div class="mode-toggle">
+                        <label>
+                            <input type="radio" name="combat-mode" value="melee" checked>
+                            Melee Combat
+                        </label>
+                        <label>
+                            <input type="radio" name="combat-mode" value="missile">
+                            Missile Fire
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="sim-count">
+                    <label>Simulations (100 - 50,000)</label>
+                    <input type="number" id="sim-count" value="10000" min="100" max="50000" step="1000">
+                </div>
+                
+                <button class="run-button" onclick="runSimulation()">
+                    Run Simulation
+                </button>
+            </div>
+
+            <!-- Defender Panel -->
+            <div class="unit-panel defender">
+                <h2>🛡 Defender</h2>
+                
+                <div class="form-group">
+                    <label>Unit Name</label>
+                    <input type="text" id="defender-name" placeholder="e.g., Spearmen">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Figures</label>
+                        <input type="number" id="defender-figures" value="4" min="1">
+                    </div>
+                </div>
+                
+                <!-- Melee Attack Field -->
+                <div class="form-group combat-field melee-field">
+                    <label>Melee Attack</label>
+                    <input type="text" id="defender-melee" placeholder="e.g., 1d6/1f" onblur="validateDiceInput(this)">
+                    <p class="validation-message" id="defender-melee-validation"></p>
+                </div>
+                
+                <!-- Missile Dodge Field -->
+                <div class="form-group combat-field missile-field" style="display: none;">
+                    <label>Missile Dodge</label>
+                    <input type="text" id="defender-dodge" placeholder="e.g., 1d6/1f" onblur="validateDiceInput(this)">
+                    <p class="help-text">Max dice rolled = successes, limited by figures</p>
+                    <p class="validation-message" id="defender-dodge-validation"></p>
+                </div>
+                
+                <div class="bonus-section">
+                    <h3>Bonus Dice</h3>
+                    <div class="bonus-select">
+                        <label class="bonus-option">
+                            <input type="radio" name="defender-bonus" value="none" checked>
+                            <span>None</span>
+                        </label>
+                        <label class="bonus-option">
+                            <input type="radio" name="defender-bonus" value="standard">
+                            <span>50% Bonus</span>
+                        </label>
+                        <label class="bonus-option">
+                            <input type="radio" name="defender-bonus" value="double">
+                            <span>100% Bonus</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="results">
+            <h2 class="results-header">Simulation Results</h2>
+            
+            <div class="results-grid">
+                <!-- Victory Probability -->
+                <div class="result-card">
+                    <h3>Victory Probability</h3>
+                    <div class="victory-chart" id="victory-chart">
+                        <div class="bar-container">
+                            <div class="bar-wrapper">
+                                <div class="bar attacker" id="bar-attacker" style="height: 0;">
+                                    <span class="bar-value" id="val-attacker">0%</span>
+                                </div>
+                            </div>
+                            <span class="bar-label">Attacker</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-wrapper">
+                                <div class="bar draw" id="bar-draw" style="height: 0;">
+                                    <span class="bar-value" id="val-draw">0%</span>
+                                </div>
+                            </div>
+                            <span class="bar-label">Draw</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-wrapper">
+                                <div class="bar defender" id="bar-defender" style="height: 0;">
+                                    <span class="bar-value" id="val-defender">0%</span>
+                                </div>
+                            </div>
+                            <span class="bar-label">Defender</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Combat Summary -->
+                <div class="result-card">
+                    <h3>Combat Summary</h3>
+                    <table class="stats-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>Attacker</th>
+                            <th>Defender</th>
+                        </tr>
+                        <tr>
+                            <td>Avg. Casualties Inflicted</td>
+                            <td class="stat-attacker" id="avg-cas-attacker">-</td>
+                            <td class="stat-defender" id="avg-cas-defender">-</td>
+                        </tr>
+                        <tr>
+                            <td>Avg. Comparisons Won</td>
+                            <td class="stat-attacker" id="avg-wins-attacker">-</td>
+                            <td class="stat-defender" id="avg-wins-defender">-</td>
+                        </tr>
+                        <tr>
+                            <td>Avg. Dice in Pool</td>
+                            <td class="stat-attacker" id="avg-dice-attacker">-</td>
+                            <td class="stat-defender" id="avg-dice-defender">-</td>
+                        </tr>
+                        <tr id="missile-shots-row" style="display: none;">
+                            <td>Avg. Successful Shots (5+)</td>
+                            <td class="stat-attacker" id="avg-shots-attacker">-</td>
+                            <td class="stat-defender">N/A</td>
+                        </tr>
+                        <tr id="missile-dodges-row" style="display: none;">
+                            <td>Avg. Successful Dodges</td>
+                            <td class="stat-attacker">N/A</td>
+                            <td class="stat-defender" id="avg-dodges-defender">-</td>
+                        </tr>
+                        <tr id="missile-ties-row" style="display: none;">
+                            <td>Avg. Tied Comparisons</td>
+                            <td class="stat-attacker" id="avg-ties" colspan="2" style="text-align: center;">-</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Casualties Distribution - Attacker Inflicted -->
+                <div class="result-card">
+                    <div class="histogram-container">
+                        <div class="histogram-title-row">
+                            <h3>Casualties Inflicted by Attacker 
+                                <span id="artillery-indicator" style="display: none; color: var(--accent-gold); font-size: 0.7rem;">(Artillery: 2×)</span>
+                                <span id="indirect-indicator" style="display: none; color: var(--text-secondary); font-size: 0.7rem;">(Indirect: d8→d6)</span>
+                            </h3>
+                        </div>
+                        <p class="histogram-explanation">Each bar shows how often that number of casualties occurred across all simulations</p>
+                        <div class="histogram-chart">
+                            <span class="histogram-y-label">Frequency</span>
+                            <div class="histogram" id="hist-attacker"></div>
+                        </div>
+                        <div class="histogram-x-label">Number of Casualties</div>
+                        <div class="sigma-stats" id="sigma-attacker">
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Mean (μ)</div>
+                                <div class="sigma-stat-value attacker" id="sigma-attacker-mean">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Std Dev (σ)</div>
+                                <div class="sigma-stat-value attacker" id="sigma-attacker-std">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Min</div>
+                                <div class="sigma-stat-value attacker" id="sigma-attacker-min">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Max</div>
+                                <div class="sigma-stat-value attacker" id="sigma-attacker-max">-</div>
+                            </div>
+                        </div>
+                        <div class="sigma-range" id="sigma-attacker-range">
+                            <span title="±1σ: 68.27% of outcomes fall within this range">±1σ (68%)<strong id="sigma-attacker-1s">-</strong></span>
+                            <span title="±2σ: 95.45% of outcomes fall within this range">±2σ (95%)<strong id="sigma-attacker-2s">-</strong></span>
+                            <span title="±3σ: 99.73% of outcomes fall within this range">±3σ (99.7%)<strong id="sigma-attacker-3s">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Casualties Distribution - Defender Inflicted (or Dodges in missile mode) -->
+                <div class="result-card" id="defender-hist-card">
+                    <div class="histogram-container">
+                        <div class="histogram-title-row">
+                            <h3 id="defender-hist-title">Casualties Inflicted by Defender</h3>
+                        </div>
+                        <p class="histogram-explanation" id="defender-hist-explanation">Each bar shows how often that number of casualties occurred across all simulations</p>
+                        <div class="histogram-chart">
+                            <span class="histogram-y-label">Frequency</span>
+                            <div class="histogram" id="hist-defender"></div>
+                        </div>
+                        <div class="histogram-x-label" id="defender-x-label">Number of Casualties</div>
+                        <div class="sigma-stats" id="sigma-defender">
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Mean (μ)</div>
+                                <div class="sigma-stat-value defender" id="sigma-defender-mean">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Std Dev (σ)</div>
+                                <div class="sigma-stat-value defender" id="sigma-defender-std">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Min</div>
+                                <div class="sigma-stat-value defender" id="sigma-defender-min">-</div>
+                            </div>
+                            <div class="sigma-stat">
+                                <div class="sigma-stat-label">Max</div>
+                                <div class="sigma-stat-value defender" id="sigma-defender-max">-</div>
+                            </div>
+                        </div>
+                        <div class="sigma-range" id="sigma-defender-range">
+                            <span title="±1σ: 68.27% of outcomes fall within this range">±1σ (68%)<strong id="sigma-defender-1s">-</strong></span>
+                            <span title="±2σ: 95.45% of outcomes fall within this range">±2σ (95%)<strong id="sigma-defender-2s">-</strong></span>
+                            <span title="±3σ: 99.73% of outcomes fall within this range">±3σ (99.7%)<strong id="sigma-defender-3s">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dice Statistics -->
+            <div class="result-card">
+                <h3>Dice Roll Statistics (per combat, averaged)</h3>
+                <div class="dice-breakdown">
+                    <div class="dice-side attacker">
+                        <h4>Attacker Dice</h4>
+                        <div class="dice-stat-row" title="Main dice pool size from unit stats">
+                            <span>Main Pool Size:</span>
+                            <span id="stat-attacker-base">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Extra dice rolled for bonus substitution (50% rule or manual)">
+                            <span>Bonus Dice Rolled:</span>
+                            <span id="stat-attacker-bonus">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="How many bonus dice replaced lower main dice">
+                            <span>Successful Substitutions:</span>
+                            <span id="stat-attacker-subs">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Average of the highest die value in the final pool">
+                            <span>Avg. Best Die:</span>
+                            <span id="stat-attacker-high">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Average mean value of all dice in the final pool">
+                            <span>Avg. Die Value:</span>
+                            <span id="stat-attacker-avg">-</span>
+                        </div>
+                    </div>
+                    <div class="dice-side defender">
+                        <h4>Defender Dice</h4>
+                        <div class="dice-stat-row" title="Main dice pool size from unit stats">
+                            <span>Main Pool Size:</span>
+                            <span id="stat-defender-base">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Extra dice rolled for bonus substitution (50% rule or manual)">
+                            <span>Bonus Dice Rolled:</span>
+                            <span id="stat-defender-bonus">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="How many bonus dice replaced lower main dice">
+                            <span>Successful Substitutions:</span>
+                            <span id="stat-defender-subs">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Average of the highest die value in the final pool">
+                            <span>Avg. Best Die:</span>
+                            <span id="stat-defender-high">-</span>
+                        </div>
+                        <div class="dice-stat-row" title="Average mean value of all dice in the final pool">
+                            <span>Avg. Die Value:</span>
+                            <span id="stat-defender-avg">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Simulation History (outside main for fixed position at bottom) -->
+    <section class="history-section" id="history-section">
+        <div class="history-container">
+            <div class="history-header">
+                <h2>Simulation History <span class="history-count" id="history-count" style="display: none;">0</span></h2>
+                <button class="history-clear" onclick="clearHistory()">Clear History</button>
+            </div>
+            <div class="history-list" id="history-list">
+                <div class="history-empty">No simulations yet. Run a simulation to see results here.</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // ============================================
+        // DICE NOTATION PARSER
+        // Format: [dice]d[faces]/[figures]f + [dice]d[faces]
+        // ============================================
+        
+        function parseDiceNotation(str) {
+            if (!str || str.trim() === '') return null;
+            
+            const result = {
+                perFigure: [],  // Array of {count, faces}
+                flat: []        // Array of {count, faces}
+            };
+            
+            // Split by + to separate components
+            const parts = str.toLowerCase().replace(/\s/g, '').split('+');
+            
+            for (const part of parts) {
+                // Match dice notation: NdF/Mf or just NdF
+                const perFigureMatch = part.match(/(\d+)d(\d+)\/(\d+)f/);
+                const flatMatch = part.match(/^(\d+)d(\d+)$/);
+                
+                if (perFigureMatch) {
+                    result.perFigure.push({
+                        count: parseInt(perFigureMatch[1]),
+                        faces: parseInt(perFigureMatch[2]),
+                        perFigures: parseInt(perFigureMatch[3])
+                    });
+                } else if (flatMatch) {
+                    result.flat.push({
+                        count: parseInt(flatMatch[1]),
+                        faces: parseInt(flatMatch[2])
+                    });
+                }
+            }
+            
+            return (result.perFigure.length > 0 || result.flat.length > 0) ? result : null;
+        }
+
+        // ============================================
+        // DICE POOL GENERATION
+        // ============================================
+        
+        function rollDie(faces) {
+            return Math.floor(Math.random() * faces) + 1;
+        }
+        
+        function generateDicePool(notation, figures) {
+            if (!notation) return { dice: [], composition: [] };
+            
+            const dice = [];
+            const composition = []; // Track die types for bonus calculation
+            
+            // Per-figure dice
+            for (const spec of notation.perFigure) {
+                const totalDice = Math.floor(figures / spec.perFigures) * spec.count;
+                for (let i = 0; i < totalDice; i++) {
+                    dice.push({ value: rollDie(spec.faces), faces: spec.faces });
+                    composition.push(spec.faces);
+                }
+            }
+            
+            // Flat dice
+            for (const spec of notation.flat) {
+                for (let i = 0; i < spec.count; i++) {
+                    dice.push({ value: rollDie(spec.faces), faces: spec.faces });
+                    composition.push(spec.faces);
+                }
+            }
+            
+            return { dice, composition };
+        }
+        
+        function getMostProminentDieType(composition) {
+            const counts = {};
+            for (const faces of composition) {
+                counts[faces] = (counts[faces] || 0) + 1;
+            }
+            
+            let maxCount = 0;
+            let prominentTypes = [];
+            
+            for (const [faces, count] of Object.entries(counts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    prominentTypes = [parseInt(faces)];
+                } else if (count === maxCount) {
+                    prominentTypes.push(parseInt(faces));
+                }
+            }
+            
+            // If tie, randomly select
+            if (prominentTypes.length > 1) {
+                return prominentTypes[Math.floor(Math.random() * prominentTypes.length)];
+            }
+            
+            return prominentTypes[0] || 6;
+        }
+        
+        // Apply indirect fire conversion: d8 → d6
+        function applyIndirectFire(dicePool) {
+            let conversions = 0;
+            for (const die of dicePool.dice) {
+                if (die.faces === 8) {
+                    die.faces = 6;
+                    die.value = rollDie(6);  // Re-roll with d6
+                    conversions++;
+                }
+            }
+            // Update composition
+            dicePool.composition = dicePool.composition.map(f => f === 8 ? 6 : f);
+            return conversions;
+        }
+
+        // ============================================
+        // BONUS DICE APPLICATION
+        // ============================================
+        
+        // bonusType: 'none', 'standard' (50%), 'double' (100%)
+        function applyBonus(mainPool, composition, bonusTypeOption) {
+            let bonusDice = [];
+            let bonusDieType = null;
+            let substitutions = 0;
+            
+            if (bonusTypeOption !== 'none' && mainPool.length > 0) {
+                // Calculate bonus dice count based on type
+                let bonusMultiplier = bonusTypeOption === 'double' ? 1.0 : 0.5;
+                let bonusCount = Math.floor(mainPool.length * bonusMultiplier);
+                bonusCount = Math.max(1, bonusCount);  // Minimum 1 bonus die
+                
+                bonusDieType = getMostProminentDieType(composition);
+                
+                for (let i = 0; i < bonusCount; i++) {
+                    bonusDice.push({ value: rollDie(bonusDieType), faces: bonusDieType });
+                }
+            }
+            
+            // Apply substitution - replace lowest main dice of matching type with better bonus dice
+            if (bonusDice.length > 0 && bonusDieType) {
+                // Get main dice of matching type, sorted ascending
+                const matchingIndices = [];
+                for (let i = 0; i < mainPool.length; i++) {
+                    if (mainPool[i].faces === bonusDieType) {
+                        matchingIndices.push(i);
+                    }
+                }
+                
+                matchingIndices.sort((a, b) => mainPool[a].value - mainPool[b].value);
+                
+                // Sort bonus dice descending
+                bonusDice.sort((a, b) => b.value - a.value);
+                
+                // Substitute
+                for (let i = 0; i < bonusDice.length && i < matchingIndices.length; i++) {
+                    const mainIdx = matchingIndices[i];
+                    if (bonusDice[i].value > mainPool[mainIdx].value) {
+                        mainPool[mainIdx].value = bonusDice[i].value;
+                        mainPool[mainIdx].wasBonus = true;
+                        substitutions++;
+                    }
+                }
+            }
+            
+            return { bonusDiceRolled: bonusDice.length, substitutions };
+        }
+
+        // ============================================
+        // SCRUD COMPARISON
+        // ============================================
+        
+        function scrudCompare(poolA, poolB) {
+            // Sort both pools descending
+            const sortedA = [...poolA].sort((a, b) => b.value - a.value);
+            const sortedB = [...poolB].sort((a, b) => b.value - a.value);
+            
+            const minLength = Math.min(sortedA.length, sortedB.length);
+            
+            let winsA = 0;
+            let winsB = 0;
+            
+            for (let i = 0; i < minLength; i++) {
+                if (sortedA[i].value > sortedB[i].value) {
+                    winsA++;
+                } else if (sortedB[i].value > sortedA[i].value) {
+                    winsB++;
+                }
+                // Draws are discarded
+            }
+            
+            return { winsA, winsB };
+        }
+
+        // ============================================
+        // COMBAT SIMULATIONS
+        // ============================================
+        
+        function simulateMelee(attacker, defender, attackerOpts, defenderOpts) {
+            const attackerNotation = parseDiceNotation(attacker.melee);
+            const defenderNotation = parseDiceNotation(defender.melee);
+            
+            if (!attackerNotation || !defenderNotation) {
+                return null;
+            }
+            
+            // Generate dice pools
+            const attackerPool = generateDicePool(attackerNotation, attacker.figures);
+            const defenderPool = generateDicePool(defenderNotation, defender.figures);
+            
+            // Apply bonuses
+            const attackerBonusStats = applyBonus(
+                attackerPool.dice,
+                attackerPool.composition,
+                attackerOpts.bonusType
+            );
+            
+            const defenderBonusStats = applyBonus(
+                defenderPool.dice,
+                defenderPool.composition,
+                defenderOpts.bonusType
+            );
+            
+            // SCRUD comparison
+            const { winsA, winsB } = scrudCompare(attackerPool.dice, defenderPool.dice);
+            
+            // Determine winner
+            let winner = 'draw';
+            if (winsA > winsB) winner = 'attacker';
+            else if (winsB > winsA) winner = 'defender';
+            
+            return {
+                winner,
+                attackerCasualties: winsB,  // Defender wins = attacker casualties
+                defenderCasualties: winsA,  // Attacker wins = defender casualties
+                attackerWins: winsA,
+                defenderWins: winsB,
+                attackerDice: attackerPool.dice.length,
+                defenderDice: defenderPool.dice.length,
+                attackerBonusRolled: attackerBonusStats.bonusDiceRolled,
+                defenderBonusRolled: defenderBonusStats.bonusDiceRolled,
+                attackerSubs: attackerBonusStats.substitutions,
+                defenderSubs: defenderBonusStats.substitutions,
+                attackerHighest: attackerPool.dice.length > 0 ? Math.max(...attackerPool.dice.map(d => d.value)) : 0,
+                defenderHighest: defenderPool.dice.length > 0 ? Math.max(...defenderPool.dice.map(d => d.value)) : 0,
+                attackerAvg: attackerPool.dice.length > 0 ? attackerPool.dice.reduce((s, d) => s + d.value, 0) / attackerPool.dice.length : 0,
+                defenderAvg: defenderPool.dice.length > 0 ? defenderPool.dice.reduce((s, d) => s + d.value, 0) / defenderPool.dice.length : 0,
+                attackerSuccessfulShots: 0,  // Not applicable for melee
+                defenderDodges: 0,           // Not applicable for melee
+                tiedComparisons: 0           // Could be calculated but not shown for melee
+            };
+        }
+        
+        function simulateMissile(attacker, defender, attackerOpts, defenderOpts) {
+            const attackerNotation = parseDiceNotation(attacker.missile);
+            const defenderNotation = parseDiceNotation(defender.dodge);
+            
+            if (!attackerNotation || !defenderNotation) {
+                return null;
+            }
+            
+            // Generate attacker dice pool
+            const attackerPool = generateDicePool(attackerNotation, attacker.figures);
+            
+            // Apply indirect fire conversion (d8 → d6) if enabled
+            let indirectConversions = 0;
+            if (attackerOpts.isIndirectFire) {
+                indirectConversions = applyIndirectFire(attackerPool);
+            }
+            
+            // Apply attacker bonuses
+            const attackerBonusStats = applyBonus(
+                attackerPool.dice,
+                attackerPool.composition,
+                attackerOpts.autoBonus,
+                attackerOpts.manualBonus
+            );
+            
+            // Filter for 5+ results
+            const successfulShots = attackerPool.dice.filter(d => d.value >= 5);
+            
+            if (successfulShots.length === 0) {
+                return {
+                    winner: 'defender',
+                    attackerCasualties: 0,
+                    defenderCasualties: 0,
+                    attackerWins: 0,
+                    defenderWins: 0,
+                    attackerDice: attackerPool.dice.length,
+                    defenderDice: 0,
+                    attackerBonusRolled: attackerBonusStats.bonusDiceRolled,
+                    defenderBonusRolled: 0,
+                    attackerSubs: attackerBonusStats.substitutions,
+                    defenderSubs: 0,
+                    attackerHighest: attackerPool.dice.length > 0 ? Math.max(...attackerPool.dice.map(d => d.value)) : 0,
+                    defenderHighest: 0,
+                    attackerAvg: attackerPool.dice.length > 0 ? attackerPool.dice.reduce((s, d) => s + d.value, 0) / attackerPool.dice.length : 0,
+                    defenderAvg: 0,
+                    attackerSuccessfulShots: 0,
+                    defenderDodges: 0,
+                    tiedComparisons: 0
+                };
+            }
+            
+            // Calculate max defender dice based on figures
+            let maxDefenderDice = 0;
+            for (const spec of defenderNotation.perFigure) {
+                maxDefenderDice += Math.floor(defender.figures / spec.perFigures) * spec.count;
+            }
+            for (const spec of defenderNotation.flat) {
+                maxDefenderDice += spec.count;
+            }
+            
+            // Defender rolls dice equal to successful shots, limited by max
+            const defenderDiceCount = Math.min(successfulShots.length, maxDefenderDice);
+            
+            // Generate defender pool manually
+            const defenderPool = { dice: [], composition: [] };
+            
+            // Use the most prominent die type from defender notation
+            let defenderDieType = 6;
+            if (defenderNotation.perFigure.length > 0) {
+                defenderDieType = defenderNotation.perFigure[0].faces;
+            } else if (defenderNotation.flat.length > 0) {
+                defenderDieType = defenderNotation.flat[0].faces;
+            }
+            
+            for (let i = 0; i < defenderDiceCount; i++) {
+                defenderPool.dice.push({ value: rollDie(defenderDieType), faces: defenderDieType });
+                defenderPool.composition.push(defenderDieType);
+            }
+            
+            // Apply defender bonuses
+            const defenderBonusStats = applyBonus(
+                defenderPool.dice,
+                defenderPool.composition,
+                defenderOpts.autoBonus,
+                defenderOpts.manualBonus
+            );
+            
+            // SCRUD comparison using successful shots vs defender pool
+            const { winsA, winsB } = scrudCompare(successfulShots, defenderPool.dice);
+            
+            // In missile fire, only attacker wins cause casualties
+            // Artillery causes 2 casualties per hit instead of 1
+            const casualtyMultiplier = attackerOpts.isArtillery ? 2 : 1;
+            const defenderCasualties = winsA * casualtyMultiplier;
+            
+            let winner = 'draw';
+            if (winsA > winsB) winner = 'attacker';
+            else if (winsB > winsA) winner = 'defender';
+            
+            return {
+                winner,
+                attackerCasualties: 0,  // Defender cannot cause casualties in missile fire
+                defenderCasualties: defenderCasualties,  // Attacker hits × multiplier
+                attackerWins: winsA,  // Hits that got through
+                defenderWins: winsB,  // Successful dodges
+                attackerDice: attackerPool.dice.length,
+                defenderDice: defenderPool.dice.length,
+                attackerBonusRolled: attackerBonusStats.bonusDiceRolled,
+                defenderBonusRolled: defenderBonusStats.bonusDiceRolled,
+                attackerSubs: attackerBonusStats.substitutions,
+                defenderSubs: defenderBonusStats.substitutions,
+                attackerHighest: attackerPool.dice.length > 0 ? Math.max(...attackerPool.dice.map(d => d.value)) : 0,
+                defenderHighest: defenderPool.dice.length > 0 ? Math.max(...defenderPool.dice.map(d => d.value)) : 0,
+                attackerAvg: attackerPool.dice.length > 0 ? attackerPool.dice.reduce((s, d) => s + d.value, 0) / attackerPool.dice.length : 0,
+                defenderAvg: defenderPool.dice.length > 0 ? defenderPool.dice.reduce((s, d) => s + d.value, 0) / defenderPool.dice.length : 0,
+                attackerSuccessfulShots: successfulShots.length,
+                defenderDodges: winsB,  // Successful dodges by defender
+                tiedComparisons: Math.min(successfulShots.length, defenderPool.dice.length) - winsA - winsB
+            };
+        }
+
+        // ============================================
+        // MONTE CARLO RUNNER
+        // ============================================
+        
+        function runMonteCarlo(n, combatFn, attacker, defender, attackerOpts, defenderOpts) {
+            const results = {
+                attackerWins: 0,
+                defenderWins: 0,
+                draws: 0,
+                attackerCasualties: [],
+                defenderCasualties: [],
+                totalAttackerWins: 0,
+                totalDefenderWins: 0,
+                totalAttackerDice: 0,
+                totalDefenderDice: 0,
+                totalAttackerBonusRolled: 0,
+                totalDefenderBonusRolled: 0,
+                totalAttackerSubs: 0,
+                totalDefenderSubs: 0,
+                totalAttackerHighest: 0,
+                totalDefenderHighest: 0,
+                totalAttackerAvg: 0,
+                totalDefenderAvg: 0,
+                totalAttackerSuccessfulShots: 0,
+                totalDefenderDodges: 0,
+                totalTiedComparisons: 0,
+                defenderDodgesDistribution: [],
+                validSimulations: 0
+            };
+            
+            for (let i = 0; i < n; i++) {
+                const result = combatFn(attacker, defender, attackerOpts, defenderOpts);
+                
+                if (!result) continue;
+                
+                results.validSimulations++;
+                
+                if (result.winner === 'attacker') results.attackerWins++;
+                else if (result.winner === 'defender') results.defenderWins++;
+                else results.draws++;
+                
+                results.attackerCasualties.push(result.defenderCasualties);
+                results.defenderCasualties.push(result.attackerCasualties);
+                
+                results.totalAttackerWins += result.attackerWins;
+                results.totalDefenderWins += result.defenderWins;
+                results.totalAttackerDice += result.attackerDice;
+                results.totalDefenderDice += result.defenderDice;
+                results.totalAttackerBonusRolled += result.attackerBonusRolled;
+                results.totalDefenderBonusRolled += result.defenderBonusRolled;
+                results.totalAttackerSubs += result.attackerSubs;
+                results.totalDefenderSubs += result.defenderSubs;
+                results.totalAttackerHighest += result.attackerHighest;
+                results.totalDefenderHighest += result.defenderHighest;
+                results.totalAttackerAvg += result.attackerAvg;
+                results.totalDefenderAvg += result.defenderAvg;
+                results.totalAttackerSuccessfulShots += result.attackerSuccessfulShots || 0;
+                results.totalDefenderDodges += result.defenderDodges || 0;
+                results.totalTiedComparisons += result.tiedComparisons || 0;
+                results.defenderDodgesDistribution.push(result.defenderDodges || 0);
+            }
+            
+            return results;
+        }
+
+        // ============================================
+        // CHART RENDERING
+        // ============================================
+        
+        function renderVictoryChart(results) {
+            const total = results.validSimulations;
+            if (total === 0) return;
+            
+            const attackerPct = (results.attackerWins / total * 100);
+            const defenderPct = (results.defenderWins / total * 100);
+            const drawPct = (results.draws / total * 100);
+            
+            const maxPct = Math.max(attackerPct, defenderPct, drawPct, 1);
+            
+            document.getElementById('bar-attacker').style.height = `${(attackerPct / maxPct) * 140}px`;
+            document.getElementById('bar-defender').style.height = `${(defenderPct / maxPct) * 140}px`;
+            document.getElementById('bar-draw').style.height = `${(drawPct / maxPct) * 140}px`;
+            
+            document.getElementById('val-attacker').textContent = `${attackerPct.toFixed(1)}%`;
+            document.getElementById('val-defender').textContent = `${defenderPct.toFixed(1)}%`;
+            document.getElementById('val-draw').textContent = `${drawPct.toFixed(1)}%`;
+        }
+        
+        function calculateSigmaStats(data) {
+            if (data.length === 0) return null;
+            
+            const n = data.length;
+            const mean = data.reduce((a, b) => a + b, 0) / n;
+            const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            
+            return {
+                mean,
+                stdDev,
+                min,
+                max,
+                sigma1: { low: Math.max(0, mean - stdDev), high: mean + stdDev },
+                sigma2: { low: Math.max(0, mean - 2 * stdDev), high: mean + 2 * stdDev },
+                sigma3: { low: Math.max(0, mean - 3 * stdDev), high: mean + 3 * stdDev }
+            };
+        }
+        
+        function renderSigmaStats(prefix, stats, cssClass) {
+            if (!stats) return;
+            
+            document.getElementById(`sigma-${prefix}-mean`).textContent = stats.mean.toFixed(2);
+            document.getElementById(`sigma-${prefix}-std`).textContent = stats.stdDev.toFixed(2);
+            document.getElementById(`sigma-${prefix}-min`).textContent = stats.min;
+            document.getElementById(`sigma-${prefix}-max`).textContent = stats.max;
+            
+            document.getElementById(`sigma-${prefix}-1s`).textContent = 
+                `${stats.sigma1.low.toFixed(1)} - ${stats.sigma1.high.toFixed(1)}`;
+            document.getElementById(`sigma-${prefix}-2s`).textContent = 
+                `${stats.sigma2.low.toFixed(1)} - ${stats.sigma2.high.toFixed(1)}`;
+            document.getElementById(`sigma-${prefix}-3s`).textContent = 
+                `${stats.sigma3.low.toFixed(1)} - ${stats.sigma3.high.toFixed(1)}`;
+        }
+        
+        function renderHistogram(containerId, data, cssClass, sigmaStats) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (data.length === 0) return;
+            
+            const maxVal = Math.max(...data);
+            const bins = {};
+            
+            for (let i = 0; i <= maxVal; i++) {
+                bins[i] = 0;
+            }
+            
+            for (const val of data) {
+                bins[val]++;
+            }
+            
+            const maxCount = Math.max(...Object.values(bins), 1);
+            const meanBin = sigmaStats ? Math.round(sigmaStats.mean) : -1;
+            
+            for (let i = 0; i <= maxVal; i++) {
+                const bar = document.createElement('div');
+                const isMean = (i === meanBin);
+                bar.className = `histogram-bar ${cssClass}${isMean ? ' mean-marker' : ''}`;
+                bar.style.height = `${(bins[i] / maxCount) * 110}px`;
+                
+                const pct = (bins[i] / data.length * 100).toFixed(1);
+                bar.title = `${i}: ${bins[i]} times (${pct}%)${isMean ? ' ← Mean' : ''}`;
+                
+                // Add label for every bar or just key ones
+                const label = document.createElement('span');
+                label.className = 'histogram-bar-label';
+                label.textContent = i;
+                bar.appendChild(label);
+                
+                container.appendChild(bar);
+            }
+        }
+
+        // ============================================
+        // MAIN SIMULATION RUNNER
+        // ============================================
+        
+        function showLoading(show, message) {
+            const overlay = document.getElementById('loading-overlay');
+            const progressText = document.getElementById('loading-progress');
+            
+            if (show) {
+                progressText.textContent = message || 'Running simulations...';
+                overlay.classList.add('visible');
+            } else {
+                overlay.classList.remove('visible');
+            }
+        }
+        
+        function runSimulation() {
+            const mode = document.querySelector('input[name="combat-mode"]:checked').value;
+            let simCount = parseInt(document.getElementById('sim-count').value) || 10000;
+            
+            // Validate and clamp simulation count
+            const MIN_SIMS = 100;
+            const MAX_SIMS = 50000;
+            
+            if (simCount < MIN_SIMS) {
+                simCount = MIN_SIMS;
+                document.getElementById('sim-count').value = MIN_SIMS;
+            } else if (simCount > MAX_SIMS) {
+                simCount = MAX_SIMS;
+                document.getElementById('sim-count').value = MAX_SIMS;
+                alert(`Simulation count capped at ${MAX_SIMS.toLocaleString()} for performance.`);
+            }
+            
+            // Validate inputs before running
+            const attackerMelee = document.getElementById('attacker-melee').value;
+            const attackerMissile = document.getElementById('attacker-missile').value;
+            const defenderMelee = document.getElementById('defender-melee').value;
+            const defenderDodge = document.getElementById('defender-dodge').value;
+            
+            if (mode === 'melee') {
+                const attackerValid = validateDiceNotation(attackerMelee);
+                const defenderValid = validateDiceNotation(defenderMelee);
+                
+                if (!attackerValid.valid) {
+                    alert('Invalid attacker melee notation: ' + attackerValid.error);
+                    return;
+                }
+                if (!defenderValid.valid) {
+                    alert('Invalid defender melee notation: ' + defenderValid.error);
+                    return;
+                }
+            } else {
+                const attackerValid = validateDiceNotation(attackerMissile);
+                const defenderValid = validateDiceNotation(defenderDodge);
+                
+                if (!attackerValid.valid) {
+                    alert('Invalid attacker missile notation: ' + attackerValid.error);
+                    return;
+                }
+                if (!defenderValid.valid) {
+                    alert('Invalid defender dodge notation: ' + defenderValid.error);
+                    return;
+                }
+            }
+            
+            const attacker = {
+                name: document.getElementById('attacker-name').value || 'Attacker',
+                figures: parseInt(document.getElementById('attacker-figures').value) || 1,
+                melee: attackerMelee,
+                missile: attackerMissile
+            };
+            
+            const defender = {
+                name: document.getElementById('defender-name').value || 'Defender',
+                figures: parseInt(document.getElementById('defender-figures').value) || 1,
+                melee: document.getElementById('defender-melee').value,
+                dodge: document.getElementById('defender-dodge').value
+            };
+            
+            const attackerBonusType = document.querySelector('input[name="attacker-bonus"]:checked').value;
+            const defenderBonusType = document.querySelector('input[name="defender-bonus"]:checked').value;
+            
+            const attackerOpts = {
+                bonusType: attackerBonusType,  // 'none', 'standard', 'double'
+                isArtillery: document.getElementById('attacker-artillery').checked,
+                isIndirectFire: document.getElementById('attacker-indirect').checked
+            };
+            
+            const defenderOpts = {
+                bonusType: defenderBonusType  // 'none', 'standard', 'double'
+            };
+            
+            const combatFn = mode === 'melee' ? simulateMelee : simulateMissile;
+            
+            // Show loading spinner
+            showLoading(true, `Running ${simCount.toLocaleString()} simulations...`);
+            
+            // Use setTimeout to allow UI to update before heavy computation
+            setTimeout(() => {
+                try {
+                    const results = runMonteCarlo(simCount, combatFn, attacker, defender, attackerOpts, defenderOpts);
+                    
+                    if (results.validSimulations === 0) {
+                        showLoading(false);
+                        alert('No valid simulations. Please check your dice notation inputs.');
+                        return;
+                    }
+                    
+                    // Determine which rolls were used
+                    const attackerRoll = mode === 'melee' ? attackerMelee : attackerMissile;
+                    const defenderRoll = mode === 'melee' ? defenderMelee : defenderDodge;
+                    
+                    // Render results (moved inside setTimeout)
+                    renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll);
+                    
+                } catch (error) {
+                    console.error('Simulation error:', error);
+                    alert('An error occurred during simulation.');
+                } finally {
+                    showLoading(false);
+                }
+            }, 50);
+        }
+        
+        function renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll) {
+            const n = results.validSimulations;
+            
+            // Calculate percentages for history
+            const attackerPct = results.attackerWins / n * 100;
+            const defenderPct = results.defenderWins / n * 100;
+            const drawPct = results.draws / n * 100;
+            
+            // Add to history
+            addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts);
+            
+            // Show results section
+            document.getElementById('results').classList.add('visible');
+            
+            // Render victory chart
+            renderVictoryChart(results);
+            
+            // Calculate sigma stats
+            const attackerSigma = calculateSigmaStats(results.attackerCasualties);
+            
+            // Render attacker histogram (casualties inflicted by attacker)
+            renderHistogram('hist-attacker', results.attackerCasualties, 'attacker', attackerSigma);
+            renderSigmaStats('attacker', attackerSigma, 'attacker');
+            
+            // Update summary stats
+            
+            document.getElementById('avg-cas-attacker').textContent = (results.attackerCasualties.reduce((a, b) => a + b, 0) / n).toFixed(2);
+            document.getElementById('avg-cas-defender').textContent = (results.defenderCasualties.reduce((a, b) => a + b, 0) / n).toFixed(2);
+            
+            document.getElementById('avg-wins-attacker').textContent = (results.totalAttackerWins / n).toFixed(2);
+            document.getElementById('avg-wins-defender').textContent = (results.totalDefenderWins / n).toFixed(2);
+            
+            document.getElementById('avg-dice-attacker').textContent = (results.totalAttackerDice / n).toFixed(1);
+            document.getElementById('avg-dice-defender').textContent = (results.totalDefenderDice / n).toFixed(1);
+            
+            // Show/hide missile-specific rows and update labels
+            const missileRows = ['missile-shots-row', 'missile-dodges-row', 'missile-ties-row'];
+            const defenderHistTitle = document.getElementById('defender-hist-title');
+            
+            // Show/hide artillery and indirect indicators
+            const artilleryIndicator = document.getElementById('artillery-indicator');
+            const indirectIndicator = document.getElementById('indirect-indicator');
+            
+            if (mode === 'missile') {
+                // Show missile-specific rows
+                missileRows.forEach(id => document.getElementById(id).style.display = '');
+                document.getElementById('avg-shots-attacker').textContent = (results.totalAttackerSuccessfulShots / n).toFixed(2);
+                document.getElementById('avg-dodges-defender').textContent = (results.totalDefenderDodges / n).toFixed(2);
+                document.getElementById('avg-ties').textContent = (results.totalTiedComparisons / n).toFixed(2);
+                
+                // Show artillery/indirect indicators if active
+                artilleryIndicator.style.display = attackerOpts.isArtillery ? 'inline' : 'none';
+                indirectIndicator.style.display = attackerOpts.isIndirectFire ? 'inline' : 'none';
+                
+                // Change defender histogram to show dodges instead of casualties
+                defenderHistTitle.textContent = 'Successful Dodges by Defender';
+                document.getElementById('defender-hist-explanation').textContent = 
+                    'Each bar shows how often that number of dodges occurred across all simulations';
+                document.getElementById('defender-x-label').textContent = 'Number of Dodges';
+                
+                const defenderSigma = calculateSigmaStats(results.defenderDodgesDistribution);
+                renderHistogram('hist-defender', results.defenderDodgesDistribution, 'defender', defenderSigma);
+                renderSigmaStats('defender', defenderSigma, 'defender');
+            } else {
+                // Hide artillery/indirect indicators in melee
+                artilleryIndicator.style.display = 'none';
+                indirectIndicator.style.display = 'none';
+                // Hide missile-specific rows
+                missileRows.forEach(id => document.getElementById(id).style.display = 'none');
+                defenderHistTitle.textContent = 'Casualties Inflicted by Defender';
+                document.getElementById('defender-hist-explanation').textContent = 
+                    'Each bar shows how often that number of casualties occurred across all simulations';
+                document.getElementById('defender-x-label').textContent = 'Number of Casualties';
+                
+                const defenderSigma = calculateSigmaStats(results.defenderCasualties);
+                renderHistogram('hist-defender', results.defenderCasualties, 'defender', defenderSigma);
+                renderSigmaStats('defender', defenderSigma, 'defender');
+            }
+            
+            // Dice statistics
+            document.getElementById('stat-attacker-base').textContent = (results.totalAttackerDice / n).toFixed(1);
+            document.getElementById('stat-attacker-bonus').textContent = (results.totalAttackerBonusRolled / n).toFixed(1);
+            document.getElementById('stat-attacker-subs').textContent = (results.totalAttackerSubs / n).toFixed(2);
+            document.getElementById('stat-attacker-high').textContent = (results.totalAttackerHighest / n).toFixed(2);
+            document.getElementById('stat-attacker-avg').textContent = (results.totalAttackerAvg / n).toFixed(2);
+            
+            document.getElementById('stat-defender-base').textContent = (results.totalDefenderDice / n).toFixed(1);
+            document.getElementById('stat-defender-bonus').textContent = (results.totalDefenderBonusRolled / n).toFixed(1);
+            document.getElementById('stat-defender-subs').textContent = (results.totalDefenderSubs / n).toFixed(2);
+            document.getElementById('stat-defender-high').textContent = (results.totalDefenderHighest / n).toFixed(2);
+            document.getElementById('stat-defender-avg').textContent = (results.totalDefenderAvg / n).toFixed(2);
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ============================================
+        // SIMULATION HISTORY
+        // ============================================
+        
+        const simulationHistory = [];
+        
+        function addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts) {
+            const entry = {
+                id: Date.now(),
+                mode,
+                attackerRoll,
+                defenderRoll,
+                attackerPct: attackerPct.toFixed(1),
+                defenderPct: defenderPct.toFixed(1),
+                drawPct: drawPct.toFixed(1),
+                artillery: attackerOpts.isArtillery || false,
+                indirect: attackerOpts.isIndirectFire || false,
+                attackerBonus: attackerOpts.bonusType,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            simulationHistory.unshift(entry);  // Add to beginning
+            
+            // Keep only last 20 entries
+            if (simulationHistory.length > 20) {
+                simulationHistory.pop();
+            }
+            
+            renderHistory();
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            const countBadge = document.getElementById('history-count');
+            
+            // Update count badge
+            if (simulationHistory.length > 0) {
+                countBadge.textContent = simulationHistory.length;
+                countBadge.style.display = 'inline';
+            } else {
+                countBadge.style.display = 'none';
+            }
+            
+            if (simulationHistory.length === 0) {
+                container.innerHTML = '<div class="history-empty">No simulations yet. Run a simulation to see results here.</div>';
+                return;
+            }
+            
+            container.innerHTML = simulationHistory.map((entry, index) => {
+                const modifiers = [];
+                if (entry.artillery) modifiers.push('Artillery');
+                if (entry.indirect) modifiers.push('Indirect');
+                if (entry.attackerBonus !== 'none') modifiers.push(entry.attackerBonus === 'double' ? '100% Bonus' : '50% Bonus');
+                
+                const modifierText = modifiers.length > 0 ? ` [${modifiers.join(', ')}]` : '';
+                const isNew = index === 0 ? ' new' : '';
+                
+                return `
+                    <div class="history-item${isNew}">
+                        <div class="history-type ${entry.mode}">${entry.mode}${modifierText}</div>
+                        <div class="history-rolls">
+                            <span class="attacker-roll">${entry.attackerRoll}</span>
+                            <span class="vs">vs</span>
+                            <span class="defender-roll">${entry.defenderRoll}</span>
+                        </div>
+                        <div class="history-results">
+                            <span class="win-pct attacker-pct">${entry.attackerPct}%</span>
+                            <span class="win-pct draw-pct">${entry.drawPct}%</span>
+                            <span class="win-pct defender-pct">${entry.defenderPct}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function clearHistory() {
+            simulationHistory.length = 0;
+            renderHistory();
+        }
+
+        // ============================================
+        // DICE NOTATION VALIDATION
+        // ============================================
+        
+        function validateDiceNotation(str) {
+            if (!str || str.trim() === '') {
+                return { valid: false, error: 'Empty input', parsed: null };
+            }
+            
+            const cleaned = str.toLowerCase().replace(/\s/g, '');
+            const parts = cleaned.split('+');
+            const errors = [];
+            let hasValidPart = false;
+            const diceTypes = [];
+            
+            for (const part of parts) {
+                if (part.trim() === '') continue;
+                
+                // Check for per-figure notation: NdF/Mf
+                const perFigureMatch = part.match(/^(\d+)d(\d+)\/(\d+)f$/);
+                // Check for flat notation: NdF
+                const flatMatch = part.match(/^(\d+)d(\d+)$/);
+                
+                if (perFigureMatch) {
+                    const count = parseInt(perFigureMatch[1]);
+                    const faces = parseInt(perFigureMatch[2]);
+                    const perFig = parseInt(perFigureMatch[3]);
+                    
+                    if (count < 1) errors.push(`Invalid dice count: ${count}`);
+                    if (faces < 2) errors.push(`Invalid die faces: d${faces}`);
+                    if (perFig < 1) errors.push(`Invalid figures: ${perFig}f`);
+                    if (![4, 6, 8, 10, 12, 20].includes(faces)) {
+                        errors.push(`Unusual die type: d${faces}`);
+                    }
+                    
+                    diceTypes.push(faces);
+                    hasValidPart = true;
+                } else if (flatMatch) {
+                    const count = parseInt(flatMatch[1]);
+                    const faces = parseInt(flatMatch[2]);
+                    
+                    if (count < 1) errors.push(`Invalid dice count: ${count}`);
+                    if (faces < 2) errors.push(`Invalid die faces: d${faces}`);
+                    
+                    diceTypes.push(faces);
+                    hasValidPart = true;
+                } else {
+                    errors.push(`Invalid format: "${part}"`);
+                }
+            }
+            
+            if (!hasValidPart) {
+                return { valid: false, error: 'No valid dice notation found', parsed: null, diceTypes: [] };
+            }
+            
+            if (errors.length > 0) {
+                return { valid: false, error: errors.join('; '), parsed: null, diceTypes };
+            }
+            
+            return { valid: true, error: null, parsed: parseDiceNotation(str), diceTypes };
+        }
+        
+        function validateDiceInput(inputElement) {
+            const value = inputElement.value;
+            const validationId = inputElement.id + '-validation';
+            const validationEl = document.getElementById(validationId);
+            
+            if (!validationEl) return;
+            
+            if (!value || value.trim() === '') {
+                inputElement.classList.remove('valid', 'invalid');
+                validationEl.textContent = '';
+                validationEl.className = 'validation-message';
+                return;
+            }
+            
+            const result = validateDiceNotation(value);
+            
+            if (result.valid) {
+                inputElement.classList.remove('invalid');
+                inputElement.classList.add('valid');
+                validationEl.textContent = '✓ Valid: ' + describeDicePool(result.parsed);
+                validationEl.className = 'validation-message success';
+            } else {
+                inputElement.classList.remove('valid');
+                inputElement.classList.add('invalid');
+                validationEl.textContent = '✗ ' + result.error;
+                validationEl.className = 'validation-message error';
+            }
+        }
+        
+        function describeDicePool(parsed) {
+            if (!parsed) return '';
+            const parts = [];
+            
+            for (const spec of parsed.perFigure) {
+                parts.push(`${spec.count}d${spec.faces} per ${spec.perFigures} fig`);
+            }
+            for (const spec of parsed.flat) {
+                parts.push(`${spec.count}d${spec.faces} flat`);
+            }
+            
+            return parts.join(' + ');
+        }
+        
+        // ============================================
+        // INDIRECT FIRE ELIGIBILITY
+        // ============================================
+        
+        function checkIndirectFireEligibility() {
+            const missileInput = document.getElementById('attacker-missile').value;
+            const indirectCheckbox = document.getElementById('attacker-indirect');
+            const warningEl = document.getElementById('indirect-warning');
+            
+            if (!missileInput || missileInput.trim() === '') {
+                warningEl.style.display = 'none';
+                return;
+            }
+            
+            const result = validateDiceNotation(missileInput);
+            
+            if (result.valid && result.diceTypes) {
+                const hasD8 = result.diceTypes.includes(8);
+                const onlyD6 = result.diceTypes.every(d => d === 6);
+                
+                if (onlyD6) {
+                    warningEl.textContent = '⚠ Only d6 in pool - indirect fire not allowed';
+                    warningEl.style.display = 'block';
+                    indirectCheckbox.disabled = true;
+                    indirectCheckbox.checked = false;
+                } else if (!hasD8) {
+                    warningEl.textContent = '⚠ No d8 in pool - indirect fire has no effect';
+                    warningEl.style.display = 'block';
+                    indirectCheckbox.disabled = false;
+                } else {
+                    warningEl.style.display = 'none';
+                    indirectCheckbox.disabled = false;
+                }
+            } else {
+                warningEl.style.display = 'none';
+            }
+        }
+        
+        // ============================================
+        // COMBAT MODE TOGGLE - Show/Hide Fields
+        // ============================================
+        
+        function updateCombatModeFields() {
+            const mode = document.querySelector('input[name="combat-mode"]:checked').value;
+            const meleeFields = document.querySelectorAll('.melee-field');
+            const missileFields = document.querySelectorAll('.missile-field');
+            
+            if (mode === 'melee') {
+                meleeFields.forEach(el => el.style.display = '');
+                missileFields.forEach(el => el.style.display = 'none');
+            } else {
+                meleeFields.forEach(el => el.style.display = 'none');
+                missileFields.forEach(el => el.style.display = '');
+                checkIndirectFireEligibility();
+            }
+        }
+        
+        // Add event listeners for combat mode radio buttons
+        document.querySelectorAll('input[name="combat-mode"]').forEach(radio => {
+            radio.addEventListener('change', updateCombatModeFields);
+        });
+        
+        // Initialize on page load
+        updateCombatModeFields();
+    </script>
+</body>
+</html>
