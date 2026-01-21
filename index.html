@@ -1571,8 +1571,7 @@
             const attackerBonusStats = applyBonus(
                 attackerPool.dice,
                 attackerPool.composition,
-                attackerOpts.autoBonus,
-                attackerOpts.manualBonus
+                attackerOpts.bonusType
             );
             
             // Filter for 5+ results
@@ -1633,8 +1632,7 @@
             const defenderBonusStats = applyBonus(
                 defenderPool.dice,
                 defenderPool.composition,
-                defenderOpts.autoBonus,
-                defenderOpts.manualBonus
+                defenderOpts.bonusType
             );
             
             // SCRUD comparison using successful shots vs defender pool
