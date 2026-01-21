@@ -788,6 +788,22 @@
             color: var(--text-secondary);
         }
 
+        .history-rolls .attacker-roll {
+            color: var(--accent-attacker-light);
+        }
+
+        .history-rolls .attacker-roll strong {
+            color: var(--accent-attacker-light);
+        }
+
+        .history-rolls .defender-roll {
+            color: var(--accent-defender-light);
+        }
+
+        .history-rolls .defender-roll strong {
+            color: var(--accent-defender-light);
+        }
+
         .history-rolls .vs {
             color: var(--text-muted);
             margin: 0 0.5rem;
@@ -856,14 +872,45 @@
                 grid-template-columns: 1fr;
             }
             
+            .unit-panel.attacker {
+                order: 1;
+            }
+            
+            .unit-panel.defender {
+                order: 2;
+            }
+            
             .control-panel {
+                order: 3;
                 flex-direction: row;
                 flex-wrap: wrap;
                 justify-content: center;
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 1.5rem;
+                margin-top: 0.5rem;
             }
             
             .results-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            main {
+                padding: 1rem;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .history-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .history-results {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -1853,15 +1900,18 @@
                 }
             }
             
+            const attackerNameInput = document.getElementById('attacker-name').value.trim();
+            const defenderNameInput = document.getElementById('defender-name').value.trim();
+            
             const attacker = {
-                name: document.getElementById('attacker-name').value || 'Attacker',
+                name: attackerNameInput || 'Attacker',
                 figures: parseInt(document.getElementById('attacker-figures').value) || 1,
                 melee: attackerMelee,
                 missile: attackerMissile
             };
             
             const defender = {
-                name: document.getElementById('defender-name').value || 'Defender',
+                name: defenderNameInput || 'Defender',
                 figures: parseInt(document.getElementById('defender-figures').value) || 1,
                 melee: document.getElementById('defender-melee').value,
                 dodge: document.getElementById('defender-dodge').value
@@ -1901,7 +1951,7 @@
                     const defenderRoll = mode === 'melee' ? defenderMelee : defenderDodge;
                     
                     // Render results (moved inside setTimeout)
-                    renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll);
+                    renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll, attackerNameInput, defenderNameInput);
                     
                 } catch (error) {
                     console.error('Simulation error:', error);
@@ -1912,7 +1962,7 @@
             }, 50);
         }
         
-        function renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll) {
+        function renderResults(results, mode, attackerOpts, attackerRoll, defenderRoll, attackerName, defenderName) {
             const n = results.validSimulations;
             
             // Calculate percentages for history
@@ -1920,8 +1970,8 @@
             const defenderPct = results.defenderWins / n * 100;
             const drawPct = results.draws / n * 100;
             
-            // Add to history
-            addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts);
+            // Add to history (pass names only if user provided them)
+            addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts, attackerName, defenderName);
             
             // Show results section
             document.getElementById('results').classList.add('visible');
@@ -2014,12 +2064,14 @@
         
         const simulationHistory = [];
         
-        function addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts) {
+        function addToHistory(mode, attackerRoll, defenderRoll, attackerPct, defenderPct, drawPct, attackerOpts, attackerName, defenderName) {
             const entry = {
                 id: Date.now(),
                 mode,
                 attackerRoll,
                 defenderRoll,
+                attackerName: attackerName || '',
+                defenderName: defenderName || '',
                 attackerPct: attackerPct.toFixed(1),
                 defenderPct: defenderPct.toFixed(1),
                 drawPct: drawPct.toFixed(1),
@@ -2065,13 +2117,21 @@
                 const modifierText = modifiers.length > 0 ? ` [${modifiers.join(', ')}]` : '';
                 const isNew = index === 0 ? ' new' : '';
                 
+                // Build unit display with names if provided
+                const attackerDisplay = entry.attackerName 
+                    ? `<strong>${entry.attackerName}</strong> (${entry.attackerRoll})`
+                    : entry.attackerRoll;
+                const defenderDisplay = entry.defenderName 
+                    ? `<strong>${entry.defenderName}</strong> (${entry.defenderRoll})`
+                    : entry.defenderRoll;
+                
                 return `
                     <div class="history-item${isNew}">
                         <div class="history-type ${entry.mode}">${entry.mode}${modifierText}</div>
                         <div class="history-rolls">
-                            <span class="attacker-roll">${entry.attackerRoll}</span>
+                            <span class="attacker-roll">${attackerDisplay}</span>
                             <span class="vs">vs</span>
-                            <span class="defender-roll">${entry.defenderRoll}</span>
+                            <span class="defender-roll">${defenderDisplay}</span>
                         </div>
                         <div class="history-results">
                             <span class="win-pct attacker-pct">${entry.attackerPct}%</span>
