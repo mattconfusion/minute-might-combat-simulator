@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minute Might Combat Simulator - Tests</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            background: #1a1a1d;
+            color: #e0e0e0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #c9a227;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .controls {
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #c9a227 0%, #a88520 100%);
+            color: #1a1a1d;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .summary {
+            background: #222228;
+            border: 1px solid #3a3a42;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .summary.visible {
+            display: block;
+        }
+
+        .summary h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 1.5rem;
+        }
+
+        .stat-passed {
+            color: #4a9c5a;
+        }
+
+        .stat-failed {
+            color: #c45c3e;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #3a3a42;
+            border-radius: 4px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a9c5a;
+            transition: width 0.3s;
+        }
+
+        .results {
+            background: #222228;
+            border: 1px solid #3a3a42;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #2a2a30;
+            font-size: 0.85rem;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item.pass {
+            color: #4a9c5a;
+        }
+
+        .result-item.fail {
+            color: #c45c3e;
+            background: rgba(196, 92, 62, 0.1);
+        }
+
+        .result-status {
+            font-weight: 600;
+            display: inline-block;
+            width: 50px;
+        }
+
+        .filter-controls {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .filter-controls input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #c9a227;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚔ Minute Might Balancer - Test Suite</h1>
+
+    <div class="controls">
+        <button onclick="executeTests()">Run All Tests</button>
+    </div>
+
+    <div class="summary" id="summary">
+        <h2>Results</h2>
+        <div class="stats">
+            <span class="stat-passed">✓ <span id="passed-count">0</span> passed</span>
+            <span class="stat-failed">✗ <span id="failed-count">0</span> failed</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="filter-controls" id="filter-controls" style="display: none;">
+        <label>
+            <input type="checkbox" id="show-passed" checked onchange="filterResults()">
+            Show Passed
+        </label>
+        <label>
+            <input type="checkbox" id="show-failed" checked onchange="filterResults()">
+            Show Failed
+        </label>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <!-- Load the main script first -->
+    <script src="script.js"></script>
+    <!-- Then load the tests -->
+    <script src="tests.js"></script>
+    
+    <script>
+        function executeTests() {
+            // Clear previous results
+            document.getElementById('results').innerHTML = '';
+            TestRunner.passed = 0;
+            TestRunner.failed = 0;
+            TestRunner.results = [];
+
+            // Run tests
+            const report = runAllTests();
+
+            // Update summary
+            document.getElementById('summary').classList.add('visible');
+            document.getElementById('passed-count').textContent = report.passed;
+            document.getElementById('failed-count').textContent = report.failed;
+
+            const total = report.passed + report.failed;
+            const percentage = total > 0 ? (report.passed / total * 100) : 0;
+            document.getElementById('progress-fill').style.width = `${percentage}%`;
+
+            // Show filter controls
+            document.getElementById('filter-controls').style.display = 'flex';
+
+            // Display results
+            const resultsContainer = document.getElementById('results');
+            report.results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `result-item ${result.status === 'PASS' ? 'pass' : 'fail'}`;
+                div.dataset.status = result.status.toLowerCase();
+                div.innerHTML = `<span class="result-status">${result.status}</span> ${result.message}`;
+                resultsContainer.appendChild(div);
+            });
+
+            filterResults();
+        }
+
+        function filterResults() {
+            const showPassed = document.getElementById('show-passed').checked;
+            const showFailed = document.getElementById('show-failed').checked;
+
+            document.querySelectorAll('.result-item').forEach(item => {
+                const status = item.dataset.status;
+                if (status === 'pass' && !showPassed) {
+                    item.classList.add('hidden');
+                } else if (status === 'fail' && !showFailed) {
+                    item.classList.add('hidden');
+                } else {
+                    item.classList.remove('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
